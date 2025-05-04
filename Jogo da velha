@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Jogo da Velha Moderno</title>
+<style>
+  /* Reset básico para margem e padding */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #f0f0f0;
+    user-select: none;
+  }
+  #game {
+    background: #2d2f45;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+    width: 320px;
+    max-width: 90vw;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin-bottom: 12px;
+    font-size: 1.8rem;
+    text-align: center;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 12px;
+    width: 300px;
+    height: 300px;
+  }
+  .cell {
+    background: #43455e;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    user-select: none;
+  }
+  .cell:hover {
+    background: #5760a1;
+  }
+  .cell.disabled {
+    cursor: default;
+    background: #3a3b50;
+    color: #7879a4;
+  }
+  #status {
+    margin-top: 16px;
+    min-height: 30px;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  button#restart {
+    margin-top: 20px;
+    padding: 10px 18px;
+    background: #7b61ff;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    user-select: none;
+  }
+  button#restart:hover {
+    background: #926bff;
+  }
+  /* Mobile optimization */
+  @media (max-width: 400px) {
+    #game {
+      width: 280px;
+    }
+    #board {
+      width: 260px;
+      height: 260px;
+      gap: 10px;
+    }
+    .cell {
+      font-size: 3rem;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="game">
+  <h1>Jogo da Velha</h1>
+  <div id="board" role="grid" aria-label="Tabuleiro do jogo da velha">
+    <!-- 9 cells -->
+    <div class="cell" role="gridcell" data-cell-index="0" tabindex="0" aria-label="Linha 1, Coluna 1"></div>
+    <div class="cell" role="gridcell" data-cell-index="1" tabindex="0" aria-label="Linha 1, Coluna 2"></div>
+    <div class="cell" role="gridcell" data-cell-index="2" tabindex="0" aria-label="Linha 1, Coluna 3"></div>
+    <div class="cell" role="gridcell" data-cell-index="3" tabindex="0" aria-label="Linha 2, Coluna 1"></div>
+    <div class="cell" role="gridcell" data-cell-index="4" tabindex="0" aria-label="Linha 2, Coluna 2"></div>
+    <div class="cell" role="gridcell" data-cell-index="5" tabindex="0" aria-label="Linha 2, Coluna 3"></div>
+    <div class="cell" role="gridcell" data-cell-index="6" tabindex="0" aria-label="Linha 3, Coluna 1"></div>
+    <div class="cell" role="gridcell" data-cell-index="7" tabindex="0" aria-label="Linha 3, Coluna 2"></div>
+    <div class="cell" role="gridcell" data-cell-index="8" tabindex="0" aria-label="Linha 3, Coluna 3"></div>
+  </div>
+  <div id="status" aria-live="polite" aria-atomic="true"></div>
+  <button id="restart" aria-label="Reiniciar jogo">Reiniciar Jogo</button>
+</div>
+
+<script>
+  (() => {
+    const board = Array(9).fill(null);
+    const cells = document.querySelectorAll('.cell');
+    const statusEl = document.getElementById('status');
+    const restartBtn = document.getElementById('restart');
+    let currentPlayer = 'X';
+    let gameActive = true;
+
+    const winningCombinations = [
+      [0,1,2],
+      [3,4,5],
+      [6,7,8],
+      [0,3,6],
+      [1,4,7],
+      [2,5,8],
+      [0,4,8],
+      [2,4,6],
+    ];
+
+    function updateStatus() {
+      if (!gameActive) return;
+      statusEl.textContent = `É a vez do jogador ${currentPlayer}`;
+    }
+
+    function checkWin() {
+      return winningCombinations.some(comb => {
+        return comb.every(index => board[index] === currentPlayer);
+      });
+    }
+
+    function checkDraw() {
+      return board.every(cell => cell !== null);
+    }
+
+    function makeMove(index) {
+      if (!gameActive || board[index] !== null) return false;
+      board[index] = currentPlayer;
+      cells[index].textContent = currentPlayer;
+      cells[index].classList.add('disabled');
+      if (checkWin()) {
+        statusEl.textContent = `Parabéns! Jogador ${currentPlayer} venceu!`;
+        gameActive = false;
+        highlightWin();
+        return true;
+      }
+      if (checkDraw()) {
+        statusEl.textContent = "Empate!";
+        gameActive = false;
+        return true;
+      }
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      updateStatus();
+      return true;
+    }
+
+    function highlightWin() {
+      for (let comb of winningCombinations) {
+        if (comb.every(index => board[index] === currentPlayer)) {
+          comb.forEach(index => cells[index].style.backgroundColor = '#7b61ff');
+        }
+      }
+      cells.forEach(cell => cell.classList.add('disabled'));
+    }
+
+    function resetGame() {
+      for (let i = 0; i < board.length; i++) {
+        board[i] = null;
+        cells[i].textContent = '';
+        cells[i].style.backgroundColor = '#43455e';
+        cells[i].classList.remove('disabled');
+      }
+      currentPlayer = 'X';
+      gameActive = true;
+      updateStatus();
+    }
+
+    cells.forEach(cell => {
+      cell.addEventListener('click', () => {
+        makeMove(parseInt(cell.dataset.cellIndex));
+      });
+      // Support keyboard for accessibility (enter or space to mark)
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          makeMove(parseInt(cell.dataset.cellIndex));
+        }
+      });
+    });
+
+    restartBtn.addEventListener('click', resetGame);
+
+    // Iniciar o jogo exibindo o status inicial
+    updateStatus();
+  })();
+</script>
+</body>
+</html>
